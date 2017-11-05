@@ -41,16 +41,6 @@ class DecisionTreeModel:
                         userid2: bias2
                         ...
                     }
-            self.user_profile: dict {
-                        level 0: {pseudo_user1: [k1, k2, k3, ... , kt]}
-                        level 1: {pseudo_user1: [k1, k2, k3, ... , kt], pseudo_user2: [k1, k2, k3, ... , kt], pseudo_user3: [k1, k2, k3, ... , kt]}
-                        ...
-                    } profile for each level's node
-            self.item_profile: dict {
-                        level 0: {itemid1: [k1, k2, k3, ... , kt], itemid2: [k1, k2, k3, ... , kt], itemid3: [k1, k2, k3, ... , kt], ...} for each item
-                        level 1: {itemid1: [k1, k2, k3, ... , kt], itemid2: [k1, k2, k3, ... , kt], itemid3: [k1, k2, k3, ... , kt], ...} for each item
-                        ...
-                    } profile for each item
             every element represents ratings for one item, its order decide the users in tree nodes
         '''
         self.real_item_num = source.shape[0]
