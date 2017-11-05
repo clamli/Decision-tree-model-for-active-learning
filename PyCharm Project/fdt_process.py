@@ -13,7 +13,8 @@ print("file load DONE")
 ''' Save to file 'tree.pkl' '''
 start = 0
 end = int(rating_matrix_csc.shape[1] * 0.75)
-dtmodel_realdata = dt.DecisionTreeModel(rating_matrix_csc[:, start:end], depth_threshold = 10)
+endt = int(rating_matrix_csc.shape[1] * 0.6)
+dtmodel_realdata = dt.DecisionTreeModel(rating_matrix_csc[:, start:endt], depth_threshold = 10)
 dtmodel_realdata.build_model()
 o_tree = open('./tree_data_structure/tree.pkl', 'wb')
 pickle.dump(dtmodel_realdata, o_tree)
@@ -26,11 +27,11 @@ inputf = open('./tree_data_structure/tree.pkl', 'rb')
 dtmodel_realdata = pickle.load(inputf)
 for level in dtmodel_realdata.lr_bound:
 	plambda_candidates[level] = list(np.arange(0.001, 0.05, 0.0005))
-prediction_model = tf.generate_prediction_parameter(dtmodel_realdata, plambda_candidates)
+prediction_model = tf.generate_prediction_model(dtmodel_realdata, plambda_candidates, rating_matrix_csc[:, endt:end])
 ######################################################################
 
 ######################### Test for New-user ##########################
-rmse_result = tf.pred_RMSE_for_new_item(dtmodel_realdata, prediction_model, rating_matrix_csc[:, end:])
+rmse_result = tf.pred_RMSE_for_new_user(dtmodel_realdata, prediction_model, rating_matrix_csc[:, end:])
 ######################################################################
 
 

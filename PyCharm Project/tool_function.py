@@ -20,7 +20,15 @@ def calculate_avg_rating_for_pesudo_user(self, pseudo_user_lst):
         ret_dict[itemid] = cal_dict[itemid]['rating'] / cal_dict[itemid]['cnt']
     return ret_dict
 
-def generate_prediction_parameter(dtmodel_realdata, plambda_candidates):
+
+def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, rU):
+    RMSE = 0
+    for userid, itemid in zip(val_user_list, val_item_list):
+        RMSE += (rU[userid][itemid] - np.dot(user_profile[user_node_ind[userid]], item_profile[itemid]))**2
+    return RMSE / len(val_user_list)
+
+
+def generate_prediction_model(dtmodel_realdata, plambda_candidates, validation_set):
     ''' dtmodel_realdata.lr_bound: dict {
                 level 0: [[left_bound, right_bound]], users' bound for one level, each ele in dictionary represents one node
                 level 1: [[left_bound, right_bound], [left_bound, right_bound], [left_bound, right_bound]], 3
@@ -39,20 +47,27 @@ def generate_prediction_parameter(dtmodel_realdata, plambda_candidates):
     '''
     MF = MatrixFactorization()
     prediction_model = {}
+    val_item_list = find(validation_set)[0]
+    val_user_list = find(validation_set)[1]
+    user_node_ind = np.zeros(validation_set.shape[1])
     for level in dtmodel_realdata.lr_bound:
         prediction_model.setdefault(level)
-        train_lst = []
+        train_lst = []       
         for pseudo_user_bound, userid in zip(dtmodel_realdata.lr_bound[level], range(len(dtmodel_realdata.lr_bound[level]))):
             if pseudo_user_bound[0] > pseudo_user_bound[1]:
                 continue
             pseudo_user_lst = dtmodel_realdata.tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
             pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst)
-            train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]
+            train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]    
+            #### find node index for each validation user ####
+            user_node_ind[pseudo_user_lst] = userid      #### avoid 0
+
+        #### Train MF and Do validation ####
         min_RMSE = -1
         for plambda in plambda_candidates[level]:
             MF.change_parameter(plambda)
             user_profile, item_profile = MF.matrix_factorization(train_lst)
-            RMSE = ########################################
+            RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, dtmodel_realdata.rU)
             if min_RMSE is -1 or RMSE < min_RMSE:
                 min_RMSE = RMSE
                 min_user_profile, min_item_profilem, min_lambda = user_profile, item_profile, plambda
@@ -90,7 +105,7 @@ def predict(user_profile, item_profile):
                         for itemid, i in zip(item_profile, range(item_profile_cont.shape[0])) }
     return pred_rating
 
-def pred_RMSE_for_new_item(fdtmodel, prediction_model, sM_testing):
+def pred_RMSE_for_new_user(fdtmodel, prediction_model, sM_testing):
     '''
         fdtmodel: FDT class instance
         sM_testing: 30% test dataset (sparse matrix)
