@@ -1,7 +1,6 @@
 import numpy as np
 import pickle
 from scipy.sparse import find
-import pickle
 
 class DecisionTreeModel:
     def __init__(self, source, depth_threshold=10, plambda=7, MSP_item=200):
@@ -90,7 +89,7 @@ class DecisionTreeModel:
         i = 0
         for userid in self.rU:
             if i % 5000 == 0:
-                print("%.2f%%" % (100 * i / (0.7 * 480189)))
+                print("%.2f%%" % (100 * i / (0.75 * 480189)))
             i += 1
             self.biasU[userid] = (sum(list(self.rU[userid].values())) \
                                      + self.plambda * self.global_mean) /   \
