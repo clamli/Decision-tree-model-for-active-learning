@@ -49,7 +49,7 @@ def generate_prediction_model(dtmodel_realdata, plambda_candidates, validation_s
     prediction_model = {}
     val_item_list = find(validation_set)[0]
     val_user_list = find(validation_set)[1]
-    user_node_ind = np.zeros(validation_set.shape[1])
+    user_node_ind = np.zeros(user_size+1)                  #### notice that index is not id
     for level in dtmodel_realdata.lr_bound:
         prediction_model.setdefault(level)
         train_lst = []       
@@ -60,7 +60,7 @@ def generate_prediction_model(dtmodel_realdata, plambda_candidates, validation_s
             pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst)
             train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]    
             #### find node index for each validation user ####
-            user_node_ind[pseudo_user_lst] = userid      #### avoid 0
+            user_node_ind[pseudo_user_lst] = userid      
 
         #### Train MF and Do validation ####
         min_RMSE = -1
