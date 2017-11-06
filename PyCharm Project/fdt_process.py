@@ -5,7 +5,8 @@ import tool_function as tf
 ############################################
 
 ############### Load Data ##################
-rating_matrix_csc = load_npz('./netflix/sparse_matrix.npz').tocsc()
+rating_matrix_csc = load_npz('./netflix/sparse_matrix_100%.npz').tocsc()
+rating_matrix_val_csc = load_npz('./netflix/sparse_matrix_validation_75%.npz').tocsc()
 print("file load DONE")
 ############################################
 
@@ -14,7 +15,7 @@ print("file load DONE")
 start = 0
 end = int(rating_matrix_csc.shape[1] * 0.75)
 endt = int(rating_matrix_csc.shape[1] * 0.6)
-dtmodel_realdata = dt.DecisionTreeModel(rating_matrix_csc[:, start:endt], depth_threshold = 10)
+dtmodel_realdata = dt.DecisionTreeModel(rating_matrix_csc[:, start:end], depth_threshold = 10)
 dtmodel_realdata.build_model()
 o_tree = open('./tree_data_structure/tree.pkl', 'wb')
 pickle.dump(dtmodel_realdata, o_tree)
