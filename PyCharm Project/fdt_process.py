@@ -17,14 +17,14 @@ end = int(rating_matrix_csc.shape[1] * 0.75)
 endt = int(rating_matrix_csc.shape[1] * 0.6)
 dtmodel_realdata = dt.DecisionTreeModel(rating_matrix_csc[:, start:end], depth_threshold = 10)
 dtmodel_realdata.build_model()
-o_tree = open('./tree_data_structure/tree.pkl', 'wb')
+o_tree = open('./treeFile/tree.pkl', 'wb')
 pickle.dump(dtmodel_realdata, o_tree)
 o_tree.close()
 ############################################
 
 ######################## Build Predict Model #########################
 plambda_candidates = {}
-inputf = open('./tree_data_structure/tree.pkl', 'rb')
+inputf = open('./treeFile/tree.pkl', 'rb')
 dtmodel_realdata = pickle.load(inputf)
 
 #### rI, rU
