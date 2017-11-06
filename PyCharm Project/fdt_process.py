@@ -25,13 +25,19 @@ o_tree.close()
 plambda_candidates = {}
 inputf = open('./tree_data_structure/tree.pkl', 'rb')
 dtmodel_realdata = pickle.load(inputf)
-for level in dtmodel_realdata.lr_bound:
+
+#### rI, rU
+#### lr_bound
+#### split_item
+#### tree
+
+for level in lr_bound:
 	plambda_candidates[level] = list(np.arange(0.001, 0.05, 0.0005))
-prediction_model = tf.generate_prediction_model(dtmodel_realdata, plambda_candidates, rating_matrix_csc[:, endt:end])
+prediction_model = tf.generate_prediction_model(lr_bound, tree, rI, rU, plambda_candidates, rating_matrix_csc[:, endt:end])
 ######################################################################
 
 ######################### Test for New-user ##########################
-rmse_result = tf.pred_RMSE_for_new_user(dtmodel_realdata, prediction_model, rating_matrix_csc[:, end:])
+rmse_result = tf.pred_RMSE_for_new_user(split_item, rI, prediction_model, rating_matrix_csc[:, end:])
 ######################################################################
 
 

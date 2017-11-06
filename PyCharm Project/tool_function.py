@@ -2,16 +2,16 @@ from matrix_factorization import MatrixFactorization
 from scipy.sparse import find
 
 ########################################## For Validation #############################################
-def calculate_avg_rating_for_pesudo_user(self, pseudo_user_lst):
+def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, rU):
     '''ret_dict: dict {
         itemid0: rating0 
         itemid1: rating1
         ...             
     }'''
-    cal_dict = {key: {'rating': 0, 'cnt': 0} for key in self.rI}
+    cal_dict = {key: {'rating': 0, 'cnt': 0} for key in rI}
     ret_dict = {}
     for userid in pseudo_user_lst:
-        for itemid, rating in self.rU[userid].items():
+        for itemid, rating in rU[userid].items():
             cal_dict[itemid]['rating'] += rating
             cal_dict[itemid]['cnt'] += 1
     for itemid in cal_dict:
@@ -28,8 +28,8 @@ def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_u
     return RMSE / len(val_user_list)
 
 
-def generate_prediction_model(dtmodel_realdata, plambda_candidates, validation_set):
-    ''' dtmodel_realdata.lr_bound: dict {
+def generate_prediction_model(lr_bound, tree, rI, rU, plambda_candidates, validation_set):
+    ''' lr_bound: dict {
                 level 0: [[left_bound, right_bound]], users' bound for one level, each ele in dictionary represents one node
                 level 1: [[left_bound, right_bound], [left_bound, right_bound], [left_bound, right_bound]], 3
                 level 2: ..., 9
@@ -50,14 +50,14 @@ def generate_prediction_model(dtmodel_realdata, plambda_candidates, validation_s
     val_item_list = find(validation_set)[0]
     val_user_list = find(validation_set)[1]
     user_node_ind = np.zeros(user_size+1)                  #### notice that index is not id
-    for level in dtmodel_realdata.lr_bound:
+    for level in lr_bound:
         prediction_model.setdefault(level)
         train_lst = []       
-        for pseudo_user_bound, userid in zip(dtmodel_realdata.lr_bound[level], range(len(dtmodel_realdata.lr_bound[level]))):
+        for pseudo_user_bound, userid in zip(lr_bound[level], range(len(lr_bound[level]))):
             if pseudo_user_bound[0] > pseudo_user_bound[1]:
                 continue
-            pseudo_user_lst = dtmodel_realdata.tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
-            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst)
+            pseudo_user_lst = tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
+            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, rU)
             train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]    
             #### find node index for each validation user ####
             user_node_ind[pseudo_user_lst] = userid      
@@ -67,7 +67,7 @@ def generate_prediction_model(dtmodel_realdata, plambda_candidates, validation_s
         for plambda in plambda_candidates[level]:
             MF.change_parameter(plambda)
             user_profile, item_profile = MF.matrix_factorization(train_lst)
-            RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, dtmodel_realdata.rU)
+            RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, rU)
             if min_RMSE is -1 or RMSE < min_RMSE:
                 min_RMSE = RMSE
                 min_user_profile, min_item_profilem, min_lambda = user_profile, item_profile, plambda
@@ -105,9 +105,8 @@ def predict(user_profile, item_profile):
                         for itemid, i in zip(item_profile, range(item_profile_cont.shape[0])) }
     return pred_rating
 
-def pred_RMSE_for_new_user(fdtmodel, prediction_model, sM_testing):
+def pred_RMSE_for_new_user(split_item, rI, prediction_model, sM_testing):
     '''
-        fdtmodel: FDT class instance
         sM_testing: 30% test dataset (sparse matrix)
         split_item: list [
                 level 0: [112],
@@ -127,7 +126,7 @@ def pred_RMSE_for_new_user(fdtmodel, prediction_model, sM_testing):
     userset = x[1]
     User = {}
     for itemid, userid in zip(itemset, userset):
-        if itemid in fdtmodel.rI:
+        if itemid in rI:
             User.setdefault(userid, {})[itemid] = sM_testing[itemid, userid]
 
     rmse = 0
@@ -135,31 +134,31 @@ def pred_RMSE_for_new_user(fdtmodel, prediction_model, sM_testing):
         pred_index = 0
         new_user_ratings = []
         rated_item = []
-        for level in range(len(fdtmodel.split_item)):
-            if fdtmodel.split_item[level][pred_index] not in User[userid]:
+        for level in range(len(split_item)):
+            if split_item[level][pred_index] not in User[userid]:
                 tmp_pred_index = 3*pred_index + 2
                 if tmp_pred_index in prediction_model[str(int(level)+1)]['upro']:
-                    new_user_ratings.append([fdtmodel.split_item[level][pred_index], 0])
+                    new_user_ratings.append([split_item[level][pred_index], 0])
                     pred_index = tmp_pred_index
                 else:
                     break
-            elif User[userid][fdtmodel.split_item[level][pred_index]] >= 4:
+            elif User[userid][split_item[level][pred_index]] >= 4:
                 tmp_pred_index = 3*pred_index
                 if tmp_pred_index in prediction_model[str(int(level)+1)]['upro']:
-                    rated_item.append(fdtmodel.split_item[level][pred_index])
-                    new_user_ratings.append([fdtmodel.split_item[level][pred_index], User[userid][fdtmodel.split_item[level][pred_index]]])
+                    rated_item.append(split_item[level][pred_index])
+                    new_user_ratings.append([split_item[level][pred_index], User[userid][split_item[level][pred_index]]])
                     pred_index = tmp_pred_index
                 else:
                     break
-            elif User[userid][fdtmodel.split_item[level][pred_index]] <= 3:
+            elif User[userid][split_item[level][pred_index]] <= 3:
                 tmp_pred_index = 3*pred_index + 1
                 if tmp_pred_index in prediction_model[str(int(level)+1)]['upro']:
-                    rated_item.append(fdtmodel.split_item[level][pred_index])
-                    new_user_ratings.append([fdtmodel.split_item[level][pred_index], User[userid][fdtmodel.split_item[level][pred_index]]])
+                    rated_item.append(split_item[level][pred_index])
+                    new_user_ratings.append([split_item[level][pred_index], User[userid][split_item[level][pred_index]]])
                     pred_index = tmp_pred_index
                 else:
                     break
-        pred_rating = fdtmodel.predict(np.array(prediction_model[str(len(new_user_ratings))]['upro'][pred_index]), \
+        pred_rating = predict(np.array(prediction_model[str(len(new_user_ratings))]['upro'][pred_index]), \
                                             np.array(list(prediction_model[str(len(new_user_ratings))]['ipro'])))
         rmse += RMSE(User[userid], pred_rating, rated_item)
 
