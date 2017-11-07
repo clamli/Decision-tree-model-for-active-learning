@@ -20,7 +20,7 @@ def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_u
     RMSE = 0
     for userid, itemid in zip(val_user_list, val_item_list):
         RMSE += (sMatrix[itemid, userid] - np.dot(user_profile[user_node_ind[userid]], item_profile[itemid]))**2
-    return RMSE / len(val_user_list)
+    return (RMSE / len(val_user_list))**0.5
 
 
 def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, validation_set):
@@ -66,7 +66,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
             RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, sMatrix)
             if min_RMSE is -1 or RMSE < min_RMSE:
                 min_RMSE = RMSE
-                min_user_profile, min_item_profilem, min_lambda = user_profile, item_profile, plambda
+                min_user_profile, min_item_profile, min_lambda = user_profile, item_profile, plambda
         prediction_model[level]['upro'], prediction_model[level]['ipro'], prediction_model[level]['plambda'] \
                                              = min_user_profile, min_item_profile, min_lambda
     MF.end()   #### close MF spark session
