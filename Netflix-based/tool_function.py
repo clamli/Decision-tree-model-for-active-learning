@@ -3,17 +3,17 @@ from scipy.sparse import find
 import numpy as np
 
 ########################################## For Validation #############################################
-def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, sMatrix):
+def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, sMatrix):
     '''ret_dict: dict {
         itemid0: rating0 
         itemid1: rating1
         ...             
     }'''
-    for itemid in range(1, sMatrix.shape[0]):
-        matrix_slice = sMatrix[itemid, :]
-        ret_dict = { itemid: matrix_slice.sum(axis=1)[0,0]/matrix_slice.count_nonzero() }
 
-    return ret_dict
+    ret_array = np.zeros(sMatrix.shape[0])
+    ret_array = np.array(sMatrix[:, pseudo_user_lst].sum(axis=1))[:,0]/(sMatrix[:, pseudo_user_lst].getnnz(axis=1)+1e-9)
+
+    return ret_array
 
 
 def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, sMatrix):
@@ -53,8 +53,8 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
             if pseudo_user_bound[0] > pseudo_user_bound[1]:
                 continue
             pseudo_user_lst = tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
-            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, sMatrix)
-            train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]    
+            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, sMatrix)
+            train_lst += [(userid, int(key), float(value)) for itemid in range(pseudo_user_for_item.shape[0]) if pseudo_user_for_item[itemid]]    
             #### find node index for each validation user ####
             user_node_ind[pseudo_user_lst] = userid      
 
