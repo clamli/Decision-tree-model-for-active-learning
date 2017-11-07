@@ -28,7 +28,8 @@ Tree.clear()
 ######################## Build Predict Model #########################
 Tree = klepto.archives.dir_archive('treeFile', cached=True, serialized=True)
 Tree.load('treeFile')
-for level in lr_bound:
+plambda_candidates = {}
+for level in Tree['lr_bound']:
 	plambda_candidates[level] = list(np.arange(0.001, 0.05, 0.0005))
 prediction_model = tf.generate_prediction_model(Tree['lr_bound'], Tree['tree'], Tree['rI'], rating_matrix_csc[:, start:end], plambda_candidates, rating_matrix_val_csc)
 ######################################################################

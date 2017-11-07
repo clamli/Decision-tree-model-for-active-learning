@@ -1,24 +1,23 @@
 from matrix_factorization import MatrixFactorization
 from scipy.sparse import find
+import numpy as np
 
 ########################################## For Validation #############################################
-def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_list):
+def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_dict, sMatrix):
     '''ret_dict: dict {
         itemid0: rating0 
         itemid1: rating1
         ...             
     }'''
-    cal_dict = {key: {'rating': 0, 'cnt': 0} for key in rI}
-    ret_dict = {}
+    cal_array = np.zeros(sMatrix.shape[0])
+    cnt_array = np.zeros(sMatrix.shape[0])
+    
     for userid in pseudo_user_lst:
-        for itemid in user_rating_list[userid]:
-            rating = sMatrix[itemid, userid]
-            cal_dict[itemid]['rating'] += rating
-            cal_dict[itemid]['cnt'] += 1
-    for itemid in cal_dict:
-        if cal_dict[itemid]['cnt'] == 0:
-            continue
-        ret_dict[itemid] = cal_dict[itemid]['rating'] / cal_dict[itemid]['cnt']
+        cal_array[user_rating_dict[userid]] += sMatrix[user_rating_dict[userid], userid]
+        cnt_array[user_rating_dict[userid]] += 1
+
+    ret_dict = {itemid: cal_array[itemid]/cnt_array[itemid] for itemid in cal_array.shape[0] if cnt_array[itemid] is not 0}
+
     return ret_dict
 
 
@@ -50,10 +49,10 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
     prediction_model = {}
     val_item_list = find(validation_set)[0]
     val_user_list = find(validation_set)[1]
-    user_node_ind = np.zeros(user_size+1)                  #### notice that index is not id
-    user_rating_list = {}
+    user_node_ind = np.zeros(sMatrix.shape[1])                  #### notice that index is not id
+    user_rating_dict = {}
     for userid in range(1, sMatrix.shape[1]):
-        user_rating_list[userid] = sMatrix[:, userid].nonzero()[0]
+        user_rating_dict[userid] = sMatrix[:, userid].nonzero()[0]
 
     for level in lr_bound:
         prediction_model.setdefault(level)
@@ -62,7 +61,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
             if pseudo_user_bound[0] > pseudo_user_bound[1]:
                 continue
             pseudo_user_lst = tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
-            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_list)
+            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_dict, sMatrix)
             train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]    
             #### find node index for each validation user ####
             user_node_ind[pseudo_user_lst] = userid      
