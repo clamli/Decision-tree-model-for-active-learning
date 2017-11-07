@@ -31,7 +31,7 @@ Tree.load('treeFile')
 plambda_candidates = {}
 for level in Tree['lr_bound']:
 	plambda_candidates[level] = list(np.arange(0.001, 0.05, 0.0005))
-prediction_model = tf.generate_prediction_model(Tree['lr_bound'], Tree['tree'], Tree['rI'], rating_matrix_csc[:, start:end], plambda_candidates, rating_matrix_val_csc)
+prediction_model = tf.generate_prediction_model(Tree['lr_bound'], Tree['tree'], Tree['rI'], rating_matrix_csc[:, start:end].tocsr(), plambda_candidates, rating_matrix_val_csc)
 ######################################################################
 
 ######################### Test for New-user ##########################

@@ -3,20 +3,14 @@ from scipy.sparse import find
 import numpy as np
 
 ########################################## For Validation #############################################
-def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_dict, sMatrix):
+def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, sMatrix):
     '''ret_dict: dict {
         itemid0: rating0 
         itemid1: rating1
         ...             
     }'''
-    cal_array = np.zeros(sMatrix.shape[0])
-    cnt_array = np.zeros(sMatrix.shape[0])
-    
-    for userid in pseudo_user_lst:
-        cal_array[user_rating_dict[userid]] += sMatrix[user_rating_dict[userid], userid]
-        cnt_array[user_rating_dict[userid]] += 1
-
-    ret_dict = {itemid: cal_array[itemid]/cnt_array[itemid] for itemid in cal_array.shape[0] if cnt_array[itemid] is not 0}
+    for itemid in range(1, sMatrix.shape[0]):
+        ret_dict = { itemid: sMatrix[itemid, :].sum(axis=1)[0,0]/sMatrix[itemid, :].count_nonzero() }
 
     return ret_dict
 
@@ -50,10 +44,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
     val_item_list = find(validation_set)[0]
     val_user_list = find(validation_set)[1]
     user_node_ind = np.zeros(sMatrix.shape[1])                  #### notice that index is not id
-    user_rating_dict = {}
-    for userid in range(1, sMatrix.shape[1]):
-        user_rating_dict[userid] = sMatrix[:, userid].nonzero()[0]
-
+    
     for level in lr_bound:
         prediction_model.setdefault(level)
         train_lst = []       
@@ -61,7 +52,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
             if pseudo_user_bound[0] > pseudo_user_bound[1]:
                 continue
             pseudo_user_lst = tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
-            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_dict, sMatrix)
+            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, sMatrix)
             train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]    
             #### find node index for each validation user ####
             user_node_ind[pseudo_user_lst] = userid      
