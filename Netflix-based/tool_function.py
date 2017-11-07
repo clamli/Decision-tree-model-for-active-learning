@@ -78,7 +78,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
 def RMSE(real_rating, non_zeros_rating_cnt, pred_rating, rated_item):
     rmse1 = np.sum((pred_rating-real_rating)**2)
     rmse2 = np.sum((pred_rating[rated_item] - real_rating[rated_item])**2)
-    return ((rmse1-rmse2)/(pred_rating.shape[0]-len(rated_item)-non_zeros_rating_cnt))**0.5
+    return ((rmse1-rmse2)/(non_zeros_rating_cnt-len(rated_item)))**0.5
     # for itemid, rating in real_rating.items():
     #     if itemid not in rated_item:
     #         rmse += (pred_rating[itemid-1] - rating)**2
