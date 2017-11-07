@@ -2,7 +2,7 @@ from matrix_factorization import MatrixFactorization
 from scipy.sparse import find
 
 ########################################## For Validation #############################################
-def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, rU):
+def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_list):
     '''ret_dict: dict {
         itemid0: rating0 
         itemid1: rating1
@@ -11,7 +11,8 @@ def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, rU):
     cal_dict = {key: {'rating': 0, 'cnt': 0} for key in rI}
     ret_dict = {}
     for userid in pseudo_user_lst:
-        for itemid, rating in rU[userid].items():
+        for itemid in user_rating_list[userid]:
+            rating = sMatrix[itemid, userid]
             cal_dict[itemid]['rating'] += rating
             cal_dict[itemid]['cnt'] += 1
     for itemid in cal_dict:
@@ -21,14 +22,14 @@ def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, rU):
     return ret_dict
 
 
-def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, rU):
+def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, sMatrix):
     RMSE = 0
     for userid, itemid in zip(val_user_list, val_item_list):
-        RMSE += (rU[userid][itemid] - np.dot(user_profile[user_node_ind[userid]], item_profile[itemid]))**2
+        RMSE += (sMatrix[itemid, userid] - np.dot(user_profile[user_node_ind[userid]], item_profile[itemid]))**2
     return RMSE / len(val_user_list)
 
 
-def generate_prediction_model(lr_bound, tree, rI, rU, plambda_candidates, validation_set):
+def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, validation_set):
     ''' lr_bound: dict {
                 level 0: [[left_bound, right_bound]], users' bound for one level, each ele in dictionary represents one node
                 level 1: [[left_bound, right_bound], [left_bound, right_bound], [left_bound, right_bound]], 3
@@ -50,6 +51,10 @@ def generate_prediction_model(lr_bound, tree, rI, rU, plambda_candidates, valida
     val_item_list = find(validation_set)[0]
     val_user_list = find(validation_set)[1]
     user_node_ind = np.zeros(user_size+1)                  #### notice that index is not id
+    user_rating_list = {}
+    for userid in range(1, sMatrix.shape[1]):
+        user_rating_list[userid] = sMatrix[:, userid].nonzero()[0]
+
     for level in lr_bound:
         prediction_model.setdefault(level)
         train_lst = []       
@@ -57,7 +62,7 @@ def generate_prediction_model(lr_bound, tree, rI, rU, plambda_candidates, valida
             if pseudo_user_bound[0] > pseudo_user_bound[1]:
                 continue
             pseudo_user_lst = tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
-            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, rU)
+            pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, user_rating_list)
             train_lst += [(userid, int(key), float(value)) for key, value in pseudo_user_for_item.items()]    
             #### find node index for each validation user ####
             user_node_ind[pseudo_user_lst] = userid      
@@ -67,7 +72,7 @@ def generate_prediction_model(lr_bound, tree, rI, rU, plambda_candidates, valida
         for plambda in plambda_candidates[level]:
             MF.change_parameter(plambda)
             user_profile, item_profile = MF.matrix_factorization(train_lst)
-            RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, rU)
+            RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, sMatrix)
             if min_RMSE is -1 or RMSE < min_RMSE:
                 min_RMSE = RMSE
                 min_user_profile, min_item_profilem, min_lambda = user_profile, item_profile, plambda
