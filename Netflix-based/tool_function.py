@@ -54,7 +54,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
                 continue
             pseudo_user_lst = tree[pseudo_user_bound[0]:(pseudo_user_bound[1] + 1)]
             pseudo_user_for_item = calculate_avg_rating_for_pesudo_user(pseudo_user_lst, sMatrix)
-            train_lst += [(userid, int(key), float(value)) for itemid in range(pseudo_user_for_item.shape[0]) if pseudo_user_for_item[itemid]]    
+            train_lst += [(userid, int(itemid), float(pseudo_user_for_item[itemid])) for itemid in range(pseudo_user_for_item.shape[0]) if pseudo_user_for_item[itemid]]    
             #### find node index for each validation user ####
             user_node_ind[pseudo_user_lst] = userid      
 
