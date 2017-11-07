@@ -75,10 +75,15 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
 
 
 ############################################# For Test ################################################
-def RMSE(real_rating, non_zeros_rating_cnt, pred_rating, rated_item):
-    rmse1 = np.sum((pred_rating-real_rating)**2)
-    rmse2 = np.sum((pred_rating[rated_item] - real_rating[rated_item])**2)
-    return ((rmse1-rmse2)/(non_zeros_rating_cnt-len(rated_item)))**0.5
+def RMSE(real_rating, pred_rating, rated_item):
+    non_zeros = list(np.nonzero(real_rating)[0])
+    non_zeros = list(set(non_zeros).difference(set(rated_item)))
+    return (np.sum((pred_rating[non_zeros]-real_rating[non_zeros])**2) / (len(non_zeros)))**0.5
+
+    # rmse1 = np.sum((pred_rating-real_rating)**2)
+    # rmse2 = np.sum((pred_rating[rated_item] - real_rating[rated_item])**2)
+    # return ((rmse1-rmse2)/(non_zeros_rating_cnt-len(rated_item)))**0.5
+
     # for itemid, rating in real_rating.items():
     #     if itemid not in rated_item:
     #         rmse += (pred_rating[itemid-1] - rating)**2
@@ -121,7 +126,7 @@ def pred_RMSE_for_new_user(split_item, rI, prediction_model, sM_testing):
         return : rmse value (float)
     '''
 
-    non_zeros_rating_cnt = sM_testing.getnnz(axis=0)
+    # non_zeros_rating_cnt = sM_testing.getnnz(axis=0)
     rmse = 0
     for userid in range(sM_testing.shape[1]):
         pred_index = 0
@@ -158,7 +163,7 @@ def pred_RMSE_for_new_user(split_item, rI, prediction_model, sM_testing):
                     break
         pred_rating = predict(np.array(prediction_model[str(final_level)]['upro'][pred_index]), \
                                             np.array(list(prediction_model[str(final_level)]['ipro'].values())))
-        rmse += RMSE(sM_testing[1:, userid].toarray(), non_zeros_rating_cnt[userid], pred_rating, rated_item)
+        rmse += RMSE(sM_testing[1:, userid].toarray(), pred_rating, rated_item)
 
     return rmse / sM_testing.shape[1]
 #######################################################################################################
