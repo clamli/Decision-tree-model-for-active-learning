@@ -10,7 +10,8 @@ def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, rI, sMatrix):
         ...             
     }'''
     for itemid in range(1, sMatrix.shape[0]):
-        ret_dict = { itemid: sMatrix[itemid, :].sum(axis=1)[0,0]/sMatrix[itemid, :].count_nonzero() }
+        matrix_slice = sMatrix[itemid, :]
+        ret_dict = { itemid: matrix_slice.sum(axis=1)[0,0]/matrix_slice.count_nonzero() }
 
     return ret_dict
 
