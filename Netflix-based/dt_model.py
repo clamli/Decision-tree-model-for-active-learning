@@ -135,7 +135,7 @@ class DecisionTreeModel:
         for userid in self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)]:
             user_all_rating_id = np.array(list(self.rU[userid].keys()))
             num_rec[user_all_rating_id[:]] += 1
-        sub_item_id = np.argsort(num_rec)[:self.MSP_item]
+        sub_item_id = np.argsort(-num_rec)[:self.MSP_item]
 
         #### Find optimum item to split ####
         min_sumtL, min_sumtD, min_sumtL_2, min_sumtD_2, min_sumtU, min_sumtU_2, Error = {}, {}, {}, {}, {}, {}, {}
