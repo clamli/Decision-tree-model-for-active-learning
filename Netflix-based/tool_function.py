@@ -47,7 +47,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
     user_node_ind = np.zeros(sMatrix.shape[1])                  #### notice that index is not id
     
     for level in lr_bound:
-        prediction_model.setdefault(level)
+        prediction_model.setdefault(level, {})
         train_lst = []       
         for pseudo_user_bound, userid in zip(lr_bound[level], range(len(lr_bound[level]))):
             if pseudo_user_bound[0] > pseudo_user_bound[1]:
