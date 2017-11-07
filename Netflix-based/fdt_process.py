@@ -21,7 +21,6 @@ Tree['lr_bound'] = dtmodel_realdata.lr_bound
 Tree['tree'] = dtmodel_realdata.tree
 Tree['split_item'] = dtmodel_realdata.split_item
 Tree['rI'] = dtmodel_realdata.rI
-Tree['rU'] = dtmodel_realdata.rU
 Tree.dump()
 Tree.clear()
 ############################################
@@ -31,7 +30,7 @@ Tree = klepto.archives.dir_archive('treeFile', cached=True, serialized=True)
 Tree.load('treeFile')
 for level in lr_bound:
 	plambda_candidates[level] = list(np.arange(0.001, 0.05, 0.0005))
-prediction_model = tf.generate_prediction_model(Tree['lr_bound'], Tree['tree'], Tree['rI'], Tree['rU'], plambda_candidates, rating_matrix_val_csc)
+prediction_model = tf.generate_prediction_model(Tree['lr_bound'], Tree['tree'], Tree['rI'], rating_matrix_csc[:, start:end], plambda_candidates, rating_matrix_val_csc)
 ######################################################################
 
 ######################### Test for New-user ##########################
