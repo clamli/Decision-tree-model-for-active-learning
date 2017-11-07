@@ -75,10 +75,10 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
 
 
 ############################################# For Test ################################################
-def RMSE(real_rating, pred_rating, rated_item):
+def RMSE(real_rating, non_zeros_rating_cnt, pred_rating, rated_item):
     rmse1 = np.sum((pred_rating-real_rating)**2)
     rmse2 = np.sum((pred_rating[rated_item] - real_rating[rated_item])**2)
-    return ((rmse1-rmse2)/(pred_rating.shape[0]-len(rated_item)))**0.5
+    return ((rmse1-rmse2)/(pred_rating.shape[0]-len(rated_item)-non_zeros_rating_cnt))**0.5
     # for itemid, rating in real_rating.items():
     #     if itemid not in rated_item:
     #         rmse += (pred_rating[itemid-1] - rating)**2
@@ -91,15 +91,15 @@ def predict(user_profile, item_profile):
         user_profile: array {
                         [k1, k2, k3, ... , kt]
                     } profile for certain user
-        self.item_profile: dict {
+        item_profile: dict {
                         itemid1: [k1, k2, k3, ... , kt], 
                         itemid2: [k1, k2, k3, ... , kt], 
                         itemid3: [k1, k2, k3, ... , kt], 
                     } profile for items in each node
      '''
-    item_profile_cont = np.array(list(item_profile.values()))  # shape: (I, k)
+    # item_profile_cont = np.array(list(item_profile.values()))  # shape: (I, k)
     #### Calculate predict rating ####
-    pred_rating = np.dot(item_profile_cont, user_profile)
+    pred_rating = np.dot(item_profile, user_profile)
     # pred_rating = { itemid: np.dot(item_profile_cont[i], user_profile) \
     #                     for itemid, i in zip(item_profile, range(item_profile_cont.shape[0])) }
     return pred_rating
@@ -120,46 +120,45 @@ def pred_RMSE_for_new_user(split_item, rI, prediction_model, sM_testing):
                 }
         return : rmse value (float)
     '''
-    x = find(sM_testing)
-    itemset = x[0]
-    userset = x[1]
-    User = {}
-    for itemid, userid in zip(itemset, userset):
-        if itemid in rI:
-            User.setdefault(userid, {})[itemid] = sM_testing[itemid, userid]
 
+    non_zeros_rating_cnt = sM_testing.getnnz(axis=0)
     rmse = 0
-    for userid in User:
+    for userid in range(sM_testing.shape[1]):
         pred_index = 0
-        new_user_ratings = []
+        # new_user_ratings = []
+        final_level = 0
         rated_item = []
+        user_all_ratings = sM_testing[:,userid].nonzero()[0]
         for level in range(len(split_item)):
-            if split_item[level][pred_index] not in User[userid]:
+            if split_item[level][pred_index] not in user_all_ratings:
                 tmp_pred_index = 3*pred_index + 2
                 if tmp_pred_index in prediction_model[str(int(level)+1)]['upro']:
-                    new_user_ratings.append([split_item[level][pred_index], 0])
+                    # new_user_ratings.append([split_item[level][pred_index], 0])
+                    final_level += 1
                     pred_index = tmp_pred_index
                 else:
                     break
-            elif User[userid][split_item[level][pred_index]] >= 4:
+            elif sM_testing[split_item[level][pred_index], userid] >= 4:
                 tmp_pred_index = 3*pred_index
                 if tmp_pred_index in prediction_model[str(int(level)+1)]['upro']:
                     rated_item.append(split_item[level][pred_index]-1)
-                    new_user_ratings.append([split_item[level][pred_index], User[userid][split_item[level][pred_index]]])
+                    # new_user_ratings.append([split_item[level][pred_index], sM_testing[split_item[level][pred_index], userid]])
+                    final_level += 1
                     pred_index = tmp_pred_index
                 else:
                     break
-            elif User[userid][split_item[level][pred_index]] <= 3:
+            elif sM_testing[split_item[level][pred_index], userid] <= 3:
                 tmp_pred_index = 3*pred_index + 1
                 if tmp_pred_index in prediction_model[str(int(level)+1)]['upro']:
                     rated_item.append(split_item[level][pred_index]-1)
-                    new_user_ratings.append([split_item[level][pred_index], User[userid][split_item[level][pred_index]]])
+                    # new_user_ratings.append([split_item[level][pred_index], sM_testing[split_item[level][pred_index], userid]])
+                    final_level += 1
                     pred_index = tmp_pred_index
                 else:
                     break
-        pred_rating = predict(np.array(prediction_model[str(len(new_user_ratings))]['upro'][pred_index]), \
-                                            list(prediction_model[str(len(new_user_ratings))]['ipro']))
-        rmse += RMSE(np.array(list(User[userid].keys())), pred_rating, rated_item)
+        pred_rating = predict(np.array(prediction_model[str(final_level)]['upro'][pred_index]), \
+                                            np.array(list(prediction_model[str(final_level)]['ipro'].values())))
+        rmse += RMSE(sM_testing[1:, userid], non_zeros_rating_cnt[userid], pred_rating, rated_item)
 
-    return rmse / len(User)
+    return rmse / sM_testing.shape[1]
 #######################################################################################################
