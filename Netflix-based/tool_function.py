@@ -158,7 +158,7 @@ def pred_RMSE_for_new_user(split_item, rI, prediction_model, sM_testing):
                     break
         pred_rating = predict(np.array(prediction_model[str(final_level)]['upro'][pred_index]), \
                                             np.array(list(prediction_model[str(final_level)]['ipro'].values())))
-        rmse += RMSE(sM_testing[1:, userid], non_zeros_rating_cnt[userid], pred_rating, rated_item)
+        rmse += RMSE(sM_testing[1:, userid].toarray(), non_zeros_rating_cnt[userid], pred_rating, rated_item)
 
     return rmse / sM_testing.shape[1]
 #######################################################################################################
