@@ -99,9 +99,6 @@ class DecisionTreeModel:
             self.biasUM[itemid, non_zero_id] = self.biasU[non_zero_id]
         
         print("biasUM Generation DONE")
-
-        
-
         print("Initiation DONE!")
 
     def calculate_error(self, sumt, sumt_2, cntt):
@@ -136,6 +133,8 @@ class DecisionTreeModel:
             user_all_rating_id = self.sMatrix.getcol(userid).nonzero()[0]
             num_rec[user_all_rating_id[:]] += 1
         sub_item_id = np.argsort(-num_rec)[:self.MSP_item]
+        sMatrix = self.sMatrix[sub_item_id, :]
+        biasUM = self.biasUM[sub_item_id, :]
 
         #### Find optimum item to split ####
         min_sumtL, min_sumtD, min_sumtL_2, min_sumtD_2, min_sumtU, min_sumtU_2, Error = {}, {}, {}, {}, {}, {}, {}
@@ -163,12 +162,14 @@ class DecisionTreeModel:
             lst_L = list(user_rating_item_id[item_all_rating >= 4])
             lst_D = list(user_rating_item_id[item_all_rating <= 3])
 
-            sumt[:, 0] = (self.sMatrix[:, lst_L] - self.biasUM[:, lst_L]).sum(axis=1)
-            sumt_2[:, 0] = ((self.sMatrix[:, lst_L].toarray() - self.biasUM[:, lst_L]) ** 2).sum(axis=1)
-            cntt[:, 0] = self.sMatrix[:, lst_L].getnnz(axis=1)
-            sumt[:, 1] = (self.sMatrix[:, lst_D] - self.biasUM[:, lst_D]).sum(axis=1)
-            sumt_2[:, 1] = ((self.sMatrix[:, lst_D].toarray() - self.biasUM[:, lst_D]) ** 2).sum(axis=1)
-            cntt[:, 1] = self.sMatrix[:, lst_D].getnnz(axis=1)
+            realML = sMatrix[:, lst_L] - biasUM[:, lst_L]
+            realMD = sMatrix[:, lst_D] - biasUM[:, lst_D]
+            sumt[sub_item_id, 0] = (realML).sum(axis=1).T
+            sumt_2[sub_item_id, 0] = (realML.power(2)).sum(axis=1).T
+            cntt[sub_item_id, 0] = sMatrix[:, lst_L].getnnz(axis=1).T
+            sumt[sub_item_id, 1] = (realMD).sum(axis=1).T
+            sumt_2[sub_item_id, 1] = (realMD.power(2)).sum(axis=1).T
+            cntt[sub_item_id, 1] = sMatrix[:, lst_L].getnnz(axis=1).T
 
 
             # for user in user_rating_item_in_nodet:
