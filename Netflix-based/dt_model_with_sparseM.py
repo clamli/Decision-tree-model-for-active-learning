@@ -145,20 +145,35 @@ class DecisionTreeModel:
             sumt = np.zeros((self.real_item_num, 3))
             sumt_2 = np.zeros((self.real_item_num, 3))
             cntt = np.zeros((self.real_item_num, 3))
-            for user in user_rating_item_in_nodet:
-                ''' user_all_rating: array [ [itemid11, rating11], [itemid12, rating12], ... ] '''
-                user_all_rating_id = self.sMatrix.getcol(userid).nonzero()[0]
-                user_all_rating = find(self.sMatrix.getcol(userid))[2]
-                #### calculate sumtL for node LIKE ####
-                if self.sMatrix[itemid, user] >= 4:
-                    sumt[user_all_rating_id[:], 0] += user_all_rating[:] - self.biasU[user]
-                    sumt_2[user_all_rating_id[:], 0] += (user_all_rating[:] - self.biasU[user]) ** 2
-                    cntt[user_all_rating_id[:], 0] += 1
-                #### calculate sumtD for node DISLIKE ####
-                elif self.sMatrix[itemid, user] <= 3:
-                    sumt[user_all_rating_id[:], 1] += user_all_rating[:] - self.biasU[user]
-                    sumt_2[user_all_rating_id[:], 1] += (user_all_rating[:] - self.biasU[user]) ** 2
-                    cntt[user_all_rating_id[:], 1] += 1
+
+            item_row = find(self.sMatrix.getrow(itemid))
+            user_rating_item_id = item_row[1]
+            item_all_rating = item_row[2]
+            lst_L = list(user_rating_item_id[item_all_rating >= 4])
+            lst_D = list(user_rating_item_id[item_all_rating <= 3])
+
+            sumt[:, 0] = self.sMatrix[:, lst_L].sum(axis=1) - self.biasU[user]
+            sumt_2[:, 0] = (self.sMatrix[:, lst_L].sum(axis=1) - self.biasU[user]) ** 2
+            cntt[:, 0] = self.sMatrix[:, lst_L].getnnz(axis=1)
+            sumt[:, 1] = self.sMatrix[:, lst_D].sum(axis=1) - self.biasU[user]
+            sumt_2[:, 1] = (self.sMatrix[:, lst_D].sum(axis=1) - self.biasU[user]) ** 2
+            cntt[:, 1] = self.sMatrix[:, lst_D].getnnz(axis=1)
+
+
+            # for user in user_rating_item_in_nodet:
+            #     ''' user_all_rating: array [ [itemid11, rating11], [itemid12, rating12], ... ] '''
+            #     user_all_rating_id = self.sMatrix.getcol(userid).nonzero()[0]
+            #     user_all_rating = find(self.sMatrix.getcol(userid))[2]
+            #     #### calculate sumtL for node LIKE ####
+            #     if self.sMatrix[itemid, user] >= 4:
+            #         sumt[user_all_rating_id[:], 0] += user_all_rating[:] - self.biasU[user]
+            #         sumt_2[user_all_rating_id[:], 0] += (user_all_rating[:] - self.biasU[user]) ** 2
+            #         cntt[user_all_rating_id[:], 0] += 1
+            #     #### calculate sumtD for node DISLIKE ####
+            #     elif self.sMatrix[itemid, user] <= 3:
+            #         sumt[user_all_rating_id[:], 1] += user_all_rating[:] - self.biasU[user]
+            #         sumt_2[user_all_rating_id[:], 1] += (user_all_rating[:] - self.biasU[user]) ** 2
+            #         cntt[user_all_rating_id[:], 1] += 1
             #### calculate sumtU for node UNKNOWN ####
             sumt[:, 2] = self.sum_cur_t[:] - sumt[:, 0] - sumt[:, 1]
             sumt_2[:, 2] = self.sum_2_cur_t[:] - sumt_2[:, 0] - sumt_2[:, 1]
