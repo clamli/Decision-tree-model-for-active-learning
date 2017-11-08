@@ -56,14 +56,17 @@ class DecisionTreeModel:
         for i in range(self.depth_threshold):
             self.node_num += 3 ** i
 
-        #### Generate rI, rU ####
-        print("rI Generation start:")
-        self.rI = list(set(source.nonzero()[0]))
-
         #### Initiate Tree, lr_bound ####
         self.tree = list(range(1, self.sMatrix.shape[1]))
         self.split_item = []
         self.lr_bound = {'0': [[0, len(self.tree) - 1]]}
+
+        #### Generate rI ####
+        print("rI Generation start:")
+        self.rI = list(set(source.nonzero()[0]))
+        self.global_mean = source.sum()/source.getnnz()
+        self.item_size = len(self.rI)
+        self.user_size = len(self.tree)
 
         #### Generate bias, sum_cur_t, sum_2_cur_t ####
         self.biasU = {}
