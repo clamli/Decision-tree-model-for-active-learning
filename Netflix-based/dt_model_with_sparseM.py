@@ -145,17 +145,17 @@ class DecisionTreeModel:
             sumt = np.zeros((self.real_item_num, 3))
             sumt_2 = np.zeros((self.real_item_num, 3))
             cntt = np.zeros((self.real_item_num, 3))
-            for user in user_rating_item_in_nodet[1]:
+            for user in user_rating_item_in_nodet:
                 ''' user_all_rating: array [ [itemid11, rating11], [itemid12, rating12], ... ] '''
                 user_all_rating_id = self.sMatrix.getcol(userid).nonzero()[0]
                 user_all_rating = find(self.sMatrix.getcol(userid))[2]
                 #### calculate sumtL for node LIKE ####
-                if user_rating_item_in_nodet[2][user] >= 4:
+                if self.sMatrix[itemid, user] >= 4:
                     sumt[user_all_rating_id[:], 0] += user_all_rating[:] - self.biasU[user]
                     sumt_2[user_all_rating_id[:], 0] += (user_all_rating[:] - self.biasU[user]) ** 2
                     cntt[user_all_rating_id[:], 0] += 1
                 #### calculate sumtD for node DISLIKE ####
-                elif user_rating_item_in_nodet[2][user] <= 3:
+                elif self.sMatrix[itemid, user] <= 3:
                     sumt[user_all_rating_id[:], 1] += user_all_rating[:] - self.biasU[user]
                     sumt_2[user_all_rating_id[:], 1] += (user_all_rating[:] - self.biasU[user]) ** 2
                     cntt[user_all_rating_id[:], 1] += 1
