@@ -42,6 +42,7 @@ class DecisionTreeModel:
                     }
             every element represents ratings for one item, its order decide the users in tree nodes
         '''
+        self.sMatrix = source
         self.real_item_num = source.shape[0]
         x = find(source)
         itemset = x[0]
@@ -69,8 +70,7 @@ class DecisionTreeModel:
                 print("%.2f%%" % (100 * i / num_ratings))
             i += 1
             self.rU.setdefault(userid, {})[itemid] = source[itemid, userid]
-            self.global_mean += source[itemid, userid]
-        self.global_mean /= len(itemset)
+        self.global_mean = source.sum()/source.getnnz()
         self.item_size = len(self.rI)
         self.user_size = len(self.rU)
         print("rU Generation DONE")
@@ -147,25 +147,26 @@ class DecisionTreeModel:
                 user_rating_item_in_nodet: [ [uid01, rating01], [uid02, rating02], ... ]
                 to find all users in node t who rates item i
             '''
-            user_rating_item_in_nodet = ([userid, self.rU[userid][itemid]] for userid in
-                                         self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)] if
-                                         itemid in self.rU[userid])
+            user_rating_item_in_nodet = find(self.sMatrix[itemid, self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)]])
+            # user_rating_item_in_nodet = ([userid, self.rU[userid][itemid]] for userid in
+            #                              self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)] if
+            #                              itemid in self.rU[userid])
             sumt = np.zeros((self.real_item_num, 3))
             sumt_2 = np.zeros((self.real_item_num, 3))
             cntt = np.zeros((self.real_item_num, 3))
-            for user in user_rating_item_in_nodet:
+            for user in user_rating_item_in_nodet[1]:
                 ''' user_all_rating: array [ [itemid11, rating11], [itemid12, rating12], ... ] '''
-                user_all_rating_id = np.array(list(self.rU[user[0]].keys()))
-                user_all_rating = np.array(list(self.rU[user[0]].values()))
+                user_all_rating_id = np.array(list(self.rU[user].keys()))
+                user_all_rating = np.array(list(self.rU[user].values()))
                 #### calculate sumtL for node LIKE ####
-                if user[1] >= 4:
-                    sumt[user_all_rating_id[:], 0] += user_all_rating[:] - self.biasU[user[0]]
-                    sumt_2[user_all_rating_id[:], 0] += (user_all_rating[:] - self.biasU[user[0]]) ** 2
+                if user_rating_item_in_nodet[2][user] >= 4:
+                    sumt[user_all_rating_id[:], 0] += user_all_rating[:] - self.biasU[user]
+                    sumt_2[user_all_rating_id[:], 0] += (user_all_rating[:] - self.biasU[user]) ** 2
                     cntt[user_all_rating_id[:], 0] += 1
                 #### calculate sumtD for node DISLIKE ####
-                elif user[1] <= 3:
-                    sumt[user_all_rating_id[:], 1] += user_all_rating[:] - self.biasU[user[0]]
-                    sumt_2[user_all_rating_id[:], 1] += (user_all_rating[:] - self.biasU[user[0]]) ** 2
+                elif user_rating_item_in_nodet[2][user] <= 3:
+                    sumt[user_all_rating_id[:], 1] += user_all_rating[:] - self.biasU[user]
+                    sumt_2[user_all_rating_id[:], 1] += (user_all_rating[:] - self.biasU[user]) ** 2
                     cntt[user_all_rating_id[:], 1] += 1
             #### calculate sumtU for node UNKNOWN ####
             sumt[:, 2] = self.sum_cur_t[:] - sumt[:, 0] - sumt[:, 1]
