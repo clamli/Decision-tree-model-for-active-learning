@@ -93,8 +93,11 @@ class DecisionTreeModel:
         print("bias, sum_cur_t, sum_2_cur_t Generation DONE")
 
         #### Generate bias Matrix ####
-        lst = [1] * self.sMatrix.getnnz()
-        self.biasUM = csc_matrix((lst, (find(self.sMatrix)[0], find(self.sMatrix)[1])), shape=self.sMatrix.shape) * self.biasU
+        self.biasUM = csc_matrix(([], ([], []), shape=self.sMatrix.shape))
+        for itemid in self.rI:
+            non_zero_id = self.sMatrix.getrow(itemid).nonzero()[1]
+            self.biasUM[itemid, non_zero_id] = self.biasU[non_zero_id]
+        
         print("biasUM Generation DONE")
 
         
