@@ -136,7 +136,9 @@ class DecisionTreeModel:
                 user_rating_item_in_nodet: [ [uid01, rating01], [uid02, rating02], ... ]
                 to find all users in node t who rates item i
             '''
-            user_rating_item_in_nodet = find(self.sMatrix[itemid, self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)]])
+            user_rating_item_in_nodet = 
+                list(set(self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)]).intersection(set(find(self.sMatrix[itemid, :])[1])))
+            # user_rating_item_in_nodet = find(self.sMatrix[itemid, :])[self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)]]
             # user_rating_item_in_nodet = ([userid, self.rU[userid][itemid]] for userid in
             #                              self.tree[lr_bound_for_node[0]:(lr_bound_for_node[1] + 1)] if
             #                              itemid in self.rU[userid])
