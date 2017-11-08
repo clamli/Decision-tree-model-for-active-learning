@@ -69,7 +69,7 @@ class DecisionTreeModel:
         self.user_size = len(self.tree)
 
         #### Generate bias, sum_cur_t, sum_2_cur_t ####
-        self.biasU = {}
+        self.biasU = np.zeros(self.sMatrix.shape[1])
         self.sum_cur_t = np.zeros(self.real_item_num)
         self.sum_2_cur_t = np.zeros(self.real_item_num)
         self.sum_cntt = np.zeros(self.real_item_num)
@@ -89,7 +89,15 @@ class DecisionTreeModel:
             self.sum_cur_t[user_all_rating_id[:]] += user_all_rating[:] - self.biasU[userid]
             self.sum_2_cur_t[user_all_rating_id[:]] += (user_all_rating[:] - self.biasU[userid]) ** 2
             self.sum_cntt[user_all_rating_id[:]] += 1
+
         print("bias, sum_cur_t, sum_2_cur_t Generation DONE")
+
+        #### Generate bias Matrix ####
+        lst = [1] * self.sMatrix.getnnz()
+        self.biasUM = csc_matrix(([], (find(self.sMatrix)[0], find(self.sMatrix)[1])), shape=self.sMatrix.shape) * self.biasU
+        print("biasUM Generation DONE")
+
+        
 
         print("Initiation DONE!")
 
@@ -152,11 +160,11 @@ class DecisionTreeModel:
             lst_L = list(user_rating_item_id[item_all_rating >= 4])
             lst_D = list(user_rating_item_id[item_all_rating <= 3])
 
-            sumt[:, 0] = self.sMatrix[:, lst_L].sum(axis=1) - self.biasU[user]
-            sumt_2[:, 0] = (self.sMatrix[:, lst_L].sum(axis=1) - self.biasU[user]) ** 2
+            sumt[:, 0] = (self.sMatrix[:, lst_L] - self.biasUM[:, lst_L]).sum(axis=1)
+            sumt_2[:, 0] = ((self.sMatrix[:, lst_L].toarray() - self.biasUM[:, lst_L]) ** 2).sum(axis=1)
             cntt[:, 0] = self.sMatrix[:, lst_L].getnnz(axis=1)
-            sumt[:, 1] = self.sMatrix[:, lst_D].sum(axis=1) - self.biasU[user]
-            sumt_2[:, 1] = (self.sMatrix[:, lst_D].sum(axis=1) - self.biasU[user]) ** 2
+            sumt[:, 1] = (self.sMatrix[:, lst_D] - self.biasUM[:, lst_D]).sum(axis=1)
+            sumt_2[:, 1] = ((self.sMatrix[:, lst_D].toarray() - self.biasUM[:, lst_D]) ** 2).sum(axis=1)
             cntt[:, 1] = self.sMatrix[:, lst_D].getnnz(axis=1)
 
 
