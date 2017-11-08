@@ -94,7 +94,7 @@ class DecisionTreeModel:
 
         #### Generate bias Matrix ####
         lst = [1] * self.sMatrix.getnnz()
-        self.biasUM = csc_matrix(([], (find(self.sMatrix)[0], find(self.sMatrix)[1])), shape=self.sMatrix.shape) * self.biasU
+        self.biasUM = csc_matrix((lst, (find(self.sMatrix)[0], find(self.sMatrix)[1])), shape=self.sMatrix.shape) * self.biasU
         print("biasUM Generation DONE")
 
         
