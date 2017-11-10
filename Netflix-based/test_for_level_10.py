@@ -76,11 +76,11 @@ def calculate_avg_rating_for_pesudo_user(pseudo_user_lst, sMatrix):
 
 
 def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, sMatrix):
-    print("RMSE calculation on valset qstarted.")
+    print("RMSE calculation on valset started.")
     RMSE = 0
     i = 0
     for userid, itemid in zip(val_user_list, val_item_list):
-        if i % 500000 == 0:
+        if i % 100000 == 0:
             print("%.2f%%" % (100 * i / val_num))        
         i += 1
         RMSE += (sMatrix[itemid, userid] - np.dot(user_profile[user_node_ind[userid]], item_profile[itemid]))**2
@@ -105,13 +105,24 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
     '''
     MF = MatrixFactorization()
     prediction_model = {}
+    rmst_dict = {"0":[],
+                     "1":[],
+                     "2":[],
+                     "3":[],
+                     "4":[],
+                     "5":[],
+                     "6":[],
+                     "7":[],
+                     "8":[],
+                     "9":[],
+                     "10":[]}
     
     val_item_list = find(validation_set)[0]
     val_user_list = find(validation_set)[1]
     user_node_ind = np.zeros(sMatrix.shape[1])                  #### notice that index is not id
     
     for level in lr_bound:
-        if int(level) >= 8:
+        if int(level) <= 5:
             continue 
         print("level:", level)
         prediction_model.setdefault(level, {})
@@ -138,12 +149,24 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
             # MF.end()   #### close MF spark session
             # del MF
             RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, validation_set)
+            rmst_dict[level].append(RMSE)
             if min_RMSE is -1 or RMSE < min_RMSE:
                 min_RMSE = RMSE
                 min_user_profile, min_item_profile, min_lambda = user_profile, item_profile, plambda_candidates[level]
                 
         print("min_lambda: " + str(min_lambda))
         print("min_RMSE: " + str(min_RMSE))
+
+        import matplotlib.pyplot as plt
+
+        plt.figure(1)
+        plt.title('avg RMSE for each iteration')
+        plt.xlabel('theta')
+        plt.ylabel('avg RMSE')
+        plt.plot(plambda_candidates[level], rmst_dict[level])
+        # plt.plot(param_list, rmse_list)
+        plt.show()
+
         prediction_model[level]['upro'], prediction_model[level]['ipro'], prediction_model[level]['plambda'] \
                                              = min_user_profile, min_item_profile, min_lambda
         print("level " + level + " training DONE")
