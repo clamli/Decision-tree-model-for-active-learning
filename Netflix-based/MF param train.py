@@ -122,7 +122,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
     user_node_ind = np.zeros(sMatrix.shape[1])                  #### notice that index is not id
     
     for level in lr_bound:
-        if int(level) <= 5:
+        if int(level) >= 6:
             continue 
         print("level:", level)
         prediction_model.setdefault(level, {})
@@ -152,7 +152,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
             rmst_dict[level].append(RMSE)
             if min_RMSE is -1 or RMSE < min_RMSE:
                 min_RMSE = RMSE
-                min_user_profile, min_item_profile, min_lambda = user_profile, item_profile, plambda_candidates[level]
+                min_user_profile, min_item_profile, min_lambda = user_profile, item_profile, plambda
                 
         print("min_lambda: " + str(min_lambda))
         print("min_RMSE: " + str(min_RMSE))
@@ -160,11 +160,10 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
         import matplotlib.pyplot as plt
 
         plt.figure(1)
-        plt.title('avg RMSE for each iteration')
-        plt.xlabel('theta')
-        plt.ylabel('avg RMSE')
+        plt.title('RMSE for each reg param')
+        plt.xlabel('plambda')
+        plt.ylabel('RMSE')
         plt.plot(plambda_candidates[level], rmst_dict[level])
-        # plt.plot(param_list, rmse_list)
         plt.show()
 
         prediction_model[level]['upro'], prediction_model[level]['ipro'], prediction_model[level]['plambda'] \
