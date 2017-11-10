@@ -80,7 +80,7 @@ def pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_u
     RMSE = 0
     i = 0
     for userid, itemid in zip(val_user_list, val_item_list):
-        if i % 50000 == 0:
+        if i % 500000 == 0:
             print("%.2f%%" % (100 * i / val_num))        
         i += 1
         RMSE += (sMatrix[itemid, userid] - np.dot(user_profile[user_node_ind[userid]], item_profile[itemid]))**2
@@ -104,15 +104,15 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
             }
     '''
     MF = MatrixFactorization()
-    print("MF session started.")
     prediction_model = {}
     
-#     val_item_list = find(validation_set)[0]
-#     val_user_list = find(validation_set)[1]
+    val_item_list = find(validation_set)[0]
+    val_user_list = find(validation_set)[1]
     user_node_ind = np.zeros(sMatrix.shape[1])                  #### notice that index is not id
     
     for level in lr_bound:
-        # level = "10"
+        if int(level) >= 8:
+            continue 
         print("level:", level)
         prediction_model.setdefault(level, {})
         train_lst = []       
@@ -129,21 +129,26 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
 
         print("Rating Number of level " + level + ": " + str(len(train_lst)))
         #### Train MF and Do validation ####
-#         min_RMSE = -1
-#         for plambda in plambda_candidates[level]:
+        min_RMSE = -1
+        for plambda in plambda_candidates[level]:
         # MF = MatrixFactorization()
-        MF.change_parameter(plambda_candidates[level])
-        user_profile, item_profile = MF.matrix_factorization(train_lst)
-        # MF.end()   #### close MF spark session
-        # del MF
-#         RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, sMatrix)
-#         if min_RMSE is -1 or RMSE < min_RMSE:
-#         min_RMSE = RMSE
-        min_user_profile, min_item_profile, min_lambda = user_profile, item_profile, plambda_candidates[level]
+            print(plambda)
+            MF.change_parameter(plambda)
+            user_profile, item_profile = MF.matrix_factorization(train_lst)
+            # MF.end()   #### close MF spark session
+            # del MF
+            RMSE = pred_RMSE_for_validate_user(user_node_ind, user_profile, item_profile, val_user_list, val_item_list, validation_set)
+            if min_RMSE is -1 or RMSE < min_RMSE:
+                min_RMSE = RMSE
+                min_user_profile, min_item_profile, min_lambda = user_profile, item_profile, plambda_candidates[level]
                 
+        print("min_lambda: " + str(min_lambda))
+        print("min_RMSE: " + str(min_RMSE))
         prediction_model[level]['upro'], prediction_model[level]['ipro'], prediction_model[level]['plambda'] \
                                              = min_user_profile, min_item_profile, min_lambda
         print("level " + level + " training DONE")
+    
+    MF.end()
     return prediction_model
 
 import klepto
@@ -151,17 +156,17 @@ import numpy as np
 Tree = klepto.archives.dir_archive('treeFile', {}, serialized=True)
 Tree.load()
 
-plambda_candidates = {"0":0.001,
-                     "1":0.001,
-                     "2":0.001,
-                     "3":0.001,
-                     "4":0.003,
-                     "5":0.003,
-                     "6":0.01,
-                     "7":0.01,
-                     "8":0.02,
-                     "9":0.02,
-                     "10":0.02}
+plambda_candidates = {"0":[0.001, 0.0011, 0.0012, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0018, 0.0019],
+                     "1":[0.001, 0.0011, 0.0012, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0018, 0.0019],
+                     "2":[0.001, 0.0011, 0.0012, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0018, 0.0019],
+                     "3":[0.001, 0.0011, 0.0012, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0018, 0.0019],
+                     "4":[0.0021, 0.0022, 0.0023, 0.0024, 0.0025, 0.0026, 0.0027, 0.0028, 0.0029, 0.030],
+                     "5":[0.0021, 0.0022, 0.0023, 0.0024, 0.0025, 0.0026, 0.0027, 0.0028, 0.0029, 0.030],
+                     "6":[0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019],
+                     "7":[0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019],
+                     "8":[0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028],
+                     "9":[0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028],
+                     "10":[0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028]}
 # for level in Tree["lr_bound"]:
 #     plambda_candidates[level] = list(np.arange(0.001, 0.05, 0.005))    
 
