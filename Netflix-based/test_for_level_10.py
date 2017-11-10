@@ -21,9 +21,6 @@ print("file load DONE")
 start = 0
 end = int(rating_matrix_csc.shape[1] * 0.75)
 
-
-
-
 from pyspark.mllib.recommendation import ALS
 from pyspark.sql import SparkSession
 from pyspark import SparkConf
@@ -34,8 +31,11 @@ class MatrixFactorization:
         self.maxIter = maxIter
         self.regParam = regParam
         self.rank = rank
-        conf = SparkConf().setAppName("appName").setMaster("local[*]");  
+        conf = SparkConf().setAppName("appName").setMaster("local[*]")
+        conf.set("spark.driver.memory","8g")
+        conf.set("spark.executor.memory","8g")
         self.spark = SparkContext(conf=conf)
+
                     
                     
         print("New SparkSession started...")
@@ -112,7 +112,7 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
     user_node_ind = np.zeros(sMatrix.shape[1])                  #### notice that index is not id
     
     for level in lr_bound:
-        level = "10"
+        # level = "10"
         print("level:", level)
         prediction_model.setdefault(level, {})
         train_lst = []       
@@ -146,10 +146,6 @@ def generate_prediction_model(lr_bound, tree, rI, sMatrix, plambda_candidates, v
         print("level " + level + " training DONE")
     return prediction_model
 
-
-
-
-
 import klepto
 import numpy as np
 Tree = klepto.archives.dir_archive('treeFile', {}, serialized=True)
@@ -177,3 +173,11 @@ prediction_model = generate_prediction_model \
              rating_matrix_csc[:, start:end], 
              plambda_candidates, 
              rating_matrix_val_csc)
+
+import pickle
+import shelve
+
+d = shelve.open("prediction_model", protocol=pickle.HIGHEST_PROTOCOL)
+d["content"] = prediction_model
+d.close()
+print("Write DONE!")
